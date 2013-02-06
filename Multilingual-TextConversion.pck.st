@@ -1,4 +1,4 @@
-'From Cuis 4.1 of 12 December 2012 [latest update: #1576] on 6 February 2013 at 6:45:45 pm'!
+'From Cuis 4.1 of 12 December 2012 [latest update: #1576] on 6 February 2013 at 9:27:27 pm'!
 'Description Simple Unicode layer for Cuis; reading and writing of UFT8 files.'!
 !classDefinition: #MultiByteFileStream category: #'Multilingual-TextConversion'!
 StandardFileStream subclass: #MultiByteFileStream
@@ -248,8 +248,13 @@ skipSeparators	converter skipSeparatorsFrom: self! !
 !MultiByteFileStream methodsFor: 'public' stamp: 'ul 3/27/2010 16:19'!
 skipSeparatorsAndPeekNext	"A special function to make nextChunk fast. Same as #skipSeparators, but returns the next character after the separators if such exists."		^converter skipSeparatorsAndPeekNextFrom: self! !
 
-!MultiByteFileStream methodsFor: 'public' stamp: 'ul 12/4/2009 19:08'!
-upTo: delimiter	^self collectionSpecies new: 1000 streamContents: [ :stream |		| ch |		[ (ch := self next) == nil or: [ ch = delimiter ] ] 			whileFalse: [ stream nextPut: ch ] ]! !
+!MultiByteFileStream methodsFor: 'public' stamp: 'hjh 2/6/2013 21:10'!
+upTo: delimiter	| ch stream |
+	
+	self flag: #hjh.
+	stream := WriteStream on: (self collectionSpecies new: 1000).
+	
+	[ (ch := self next) == nil or: [ ch = delimiter ] ] 			whileFalse: [ stream nextPut: ch ]. 	^stream contents! !
 
 !MultiByteFileStream methodsFor: 'public' stamp: 'nice 12/7/2009 08:26'!
 upToAnyOf: delimiters do: aBlock	^self collectionSpecies new: 1000 streamContents: [ :stream |		| ch |		[ (ch := self next) == nil or: [ (delimiters includes: ch) and: [aBlock value: ch. true] ] ] 			whileFalse: [ stream nextPut: ch ] ]! !
@@ -318,6 +323,23 @@ setUp
      stream := (FileStream  forceNewFileNamed:  self class fileName) binary.
      stream nextPutAll: bytesOfExample1.
      stream close.! !
+
+!MultiLingualUnicodeTest methodsFor: 'testsFromSqueak' stamp: 'hjh 2/6/2013 20:52'!
+testBinaryUpTo
+	"This is a non regression test for bug http://bugs.squeak.org/view.php?id=6933"
+	"self new testBinaryUpTo"
+	
+	| fileName s |
+	fileName := 'foobug6933'.
+	s := MultiByteFileStream forceNewFileNamed: fileName.
+	s
+			binary;
+			nextPutAll: #[ 1 2 3 4 ]. 
+			.
+	s := MultiByteFileStream readOnlyFileNamed: fileName.
+	s binary.
+		
+	self assert: (s upTo: 3) = #[ 1 2 ]! !
 
 !MultiLingualUnicodeTest methodsFor: 'tests' stamp: 'hjh 2/6/2013 09:40'!
 testBytesOfExample1
