@@ -1,4 +1,4 @@
-'From Cuis 4.1 of 12 December 2012 [latest update: #1576] on 6 February 2013 at 9:27:27 pm'!
+'From Cuis 4.1 of 12 December 2012 [latest update: #1576] on 6 February 2013 at 10:05:02 pm'!
 'Description Simple Unicode layer for Cuis; reading and writing of UFT8 files.'!
 !classDefinition: #MultiByteFileStream category: #'Multilingual-TextConversion'!
 StandardFileStream subclass: #MultiByteFileStream
@@ -41,7 +41,11 @@ UTF8TextConverter class
 	instanceVariableNames: ''!
 
 
-!MultiByteFileStream commentStamp: 'hjh 2/6/2013 07:14' prior: 0!
+!MultiByteFileStream commentStamp: 'hjh 2/6/2013 22:00' prior: 0!
+Class copied from Squeak 4.4. Removed methods and simplified some.
+Needs more testing.
+
+
 The central class to access the external file.  The interface of this object is similar to good old StandardFileStream, but internally it asks the converter, which is a sub-instance of TextConverter, and do the text conversion.
 It also combined the good old CrLfFileStream.  CrLfFileStream class>>new now returns an instance of MultiByteFileStream.
 There are several pitfalls
@@ -52,7 +56,15 @@ There are several pitfalls
   * #lineEndConvention: and #wantsLineEndConversion: (and #binary) can cause some puzzling situation because the inst var lineEndConvention and wantsLineEndConversion are mutated.  If you have any suggestions to clean up the protocol, please let me know.
 
 
-Class copied from Squeak 4.4. as is. Needs testing.!
+wantsLineEndConversion is false by default. And then lineEndConvention is nil.
+
+ToDo
+-------
+
+look at
+   #next:innerFor:
+
+!
 
 !MultiLingualUnicodeTest commentStamp: 'hjh 2/6/2013 09:37' prior: 0!
 Test class to demonstrate the Unicode support in Cuis 4.1!
@@ -82,9 +94,6 @@ Text converter for UTF-8.  Since the BOM is used to distinguish the MacRoman cod
 Class copied from Squeak 4.4. as is. 
 Some methods have been removed.
 Needs more testing and cleanup. !
-
-!MultiByteFileStream methodsFor: 'remnant' stamp: 'yo 8/28/2002 11:06'!
-accepts: aSymbol 	^ converter accepts: aSymbol.! !
 
 !MultiByteFileStream methodsFor: 'accessing' stamp: 'yo 2/21/2004 02:57'!
 ascii	super ascii.	self detectLineEndConvention.! !
@@ -159,12 +168,6 @@ contentsOfEntireFile
 	self close.
 	^ws contents! !
 
-!MultiByteFileStream methodsFor: 'crlf private' stamp: 'ul 1/30/2011 04:35'!
-convertStringFromCr: aString 	| inStream outStream |		self deprecated: 'This method is obsolete and private, don''t use it!!'.	lineEndConvention ifNil: [^ aString].	lineEndConvention == #cr ifTrue: [^ aString].	lineEndConvention == #lf ifTrue: [^ aString copy replaceAll: Cr with: Lf].	"lineEndConvention == #crlf"	inStream := ReadStream on: aString.	outStream := WriteStream on: (String new: aString size).	[inStream atEnd]		whileFalse: 			[outStream nextPutAll: (inStream upTo: Cr).			(inStream atEnd not or: [aString last = Cr])				ifTrue: [outStream nextPutAll: CrLf]].	^ outStream contents! !
-
-!MultiByteFileStream methodsFor: 'crlf private' stamp: 'ul 1/30/2011 04:35'!
-convertStringToCr: aString 	| inStream outStream |		self deprecated: 'This method is obsolete and private, don''t use it!!'.	lineEndConvention ifNil: [^ aString].	lineEndConvention == #cr ifTrue: [^ aString].	lineEndConvention == #lf ifTrue: [^ aString copy replaceAll: Lf with: Cr].	"lineEndConvention == #crlf"	inStream := ReadStream on: aString.	outStream := WriteStream on: (String new: aString size).	[inStream atEnd]		whileFalse: 			[outStream nextPutAll: (inStream upTo: Cr).			(inStream atEnd not or: [aString last = Cr])				ifTrue: 					[outStream nextPut: Cr.					inStream peek = Lf ifTrue: [inStream next]]].	^ outStream contents! !
-
 !MultiByteFileStream methodsFor: 'accessing' stamp: 'ul 1/20/2011 01:42'!
 converter	^converter ifNil: [		self initializeConverter.		converter ]! !
 
@@ -174,14 +177,8 @@ converter: aConverter	converter := aConverter.	self installLineEndConventionI
 !MultiByteFileStream methodsFor: 'crlf private' stamp: 'ul 1/30/2011 04:34'!
 detectLineEndConvention	"Detect the line end convention used in this stream. The result may be either #cr, #lf or #crlf."	| char numRead state |	self isBinary ifTrue: [^ self error: 'Line end conventions are not used on binary streams'].	wantsLineEndConversion ifFalse: [self lineEndConvention: nil.					^lineEndConvention].	self closed ifTrue: [self lineEndConvention: LineEndDefault.					^lineEndConvention].	"Default if nothing else found"	numRead := 0.	state := converter saveStateOf: self.	lineEndConvention := nil.	[super atEnd not and: [numRead < LookAheadCount]]		whileTrue: 			[char := self next.			char = Lf				ifTrue: 					[converter restoreStateOf: self with: state.					self lineEndConvention: #lf.					^lineEndConvention].			char = Cr				ifTrue: 					[self peek = Lf						ifTrue: [self lineEndConvention: #crlf]						ifFalse: [self lineEndConvention: #cr].					converter restoreStateOf: self with: state.					^ lineEndConvention].			numRead := numRead + 1].	converter restoreStateOf: self with: state.	self lineEndConvention: LineEndDefault.	^ lineEndConvention! !
 
-!MultiByteFileStream methodsFor: 'crlf private' stamp: 'ul 1/30/2011 04:35'!
-doConversion	^wantsLineEndConversion and: [ lineEndConvention notNil ]! !
-
 !MultiByteFileStream methodsFor: 'accessing' stamp: 'yo 8/6/2003 11:56'!
 fileInEncodingName: aString	self converter: (TextConverter newForEncoding: aString).	super fileIn.! !
-
-!MultiByteFileStream methodsFor: 'remnant' stamp: 'yo 8/28/2002 11:09'!
-filterFor: aFileStream	| rw |	name := aFileStream name.	rw := aFileStream isReadOnly not.	aFileStream close.	self open: name forWrite: rw.	^self.! !
 
 !MultiByteFileStream methodsFor: 'initialize-release' stamp: 'ul 1/30/2011 04:28'!
 initialize	super initialize.	wantsLineEndConversion := false.	self initializeConverter! !
@@ -324,13 +321,13 @@ setUp
      stream nextPutAll: bytesOfExample1.
      stream close.! !
 
-!MultiLingualUnicodeTest methodsFor: 'testsFromSqueak' stamp: 'hjh 2/6/2013 20:52'!
+!MultiLingualUnicodeTest methodsFor: 'testsFromSqueak' stamp: 'hjh 2/6/2013 21:31'!
 testBinaryUpTo
 	"This is a non regression test for bug http://bugs.squeak.org/view.php?id=6933"
 	"self new testBinaryUpTo"
 	
 	| fileName s |
-	fileName := 'foobug6933'.
+	fileName := 'SqueakBug6933RegressionTest.bin'.
 	s := MultiByteFileStream forceNewFileNamed: fileName.
 	s
 			binary;
@@ -488,10 +485,22 @@ fileName
 fileName2
 	^'UTF8abc-test2.txt'.! !
 
-!TextConverter methodsFor: 'as yet unclassified' stamp: 'hjh 2/6/2013 09:53'!
+!TextConverter methodsFor: 'as yet unclassified' stamp: 'hjh 2/6/2013 21:49'!
 installLineEndConvention: lineEndStringOrNil
 
+	"is not called in the default case of having no line end detection"
 	self flag: #hjh! !
+
+!TextConverter methodsFor: 'as yet unclassified' stamp: 'hjh 2/6/2013 21:58'!
+restoreStateOf: aStream with: aConverterState
+
+	aStream position: aConverterState.! !
+
+!TextConverter methodsFor: 'as yet unclassified' stamp: 'hjh 2/6/2013 21:59'!
+saveStateOf: aStream
+
+	^ aStream position.
+! !
 
 !TextConverter class methodsFor: 'as yet unclassified' stamp: 'hjh 2/6/2013 09:50'!
 defaultSystemConverter
