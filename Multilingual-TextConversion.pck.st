@@ -1,4 +1,4 @@
-'From Cuis 4.1 of 12 December 2012 [latest update: #1576] on 6 February 2013 at 2:17:27 pm'!
+'From Cuis 4.1 of 12 December 2012 [latest update: #1576] on 6 February 2013 at 5:04:30 pm'!
 'Description Simple Unicode layer for Cuis; reading and writing of UFT8 files.'!
 !classDefinition: #MultiByteFileStream category: #'Multilingual-TextConversion'!
 StandardFileStream subclass: #MultiByteFileStream
@@ -142,6 +142,25 @@ basicVerbatim: aString	^ super verbatim: aString.! !
 
 !MultiByteFileStream methodsFor: 'accessing' stamp: 'nice 5/10/2009 00:14'!
 binary	super binary.	self lineEndConvention: nil! !
+
+!MultiByteFileStream methodsFor: 'accessing' stamp: 'hjh 2/6/2013 16:57'!
+contents
+
+	^ super contents utf8ToISO8859s15 ! !
+
+!MultiByteFileStream methodsFor: 'accessing' stamp: 'hjh 2/6/2013 17:01'!
+contentsOfEntireFile
+	| binary ws |
+	self readOnly.
+	binary _ self isBinary.
+	self reset.	"erases knowledge of whether it is binary"
+	binary ifTrue: [self binary].
+	
+	
+	ws := WriteStream with: String new.
+	[self atEnd] whileFalse: [ws nextPutAll: self next asString].
+	self close.
+	^ws contents! !
 
 !MultiByteFileStream methodsFor: 'crlf private' stamp: 'ul 1/30/2011 04:35'!
 convertStringFromCr: aString 	| inStream outStream |		self deprecated: 'This method is obsolete and private, don''t use it!!'.	lineEndConvention ifNil: [^ aString].	lineEndConvention == #cr ifTrue: [^ aString].	lineEndConvention == #lf ifTrue: [^ aString copy replaceAll: Cr with: Lf].	"lineEndConvention == #crlf"	inStream := ReadStream on: aString.	outStream := WriteStream on: (String new: aString size).	[inStream atEnd]		whileFalse: 			[outStream nextPutAll: (inStream upTo: Cr).			(inStream atEnd not or: [aString last = Cr])				ifTrue: [outStream nextPutAll: CrLf]].	^ outStream contents! !
@@ -311,14 +330,16 @@ bytesOfExample1
 fileName
 	^fileName! !
 
-!MultiLingualUnicodeTest methodsFor: 'initialize-release' stamp: 'hjh 2/6/2013 12:50'!
+!MultiLingualUnicodeTest methodsFor: 'initialize-release' stamp: 'hjh 2/6/2013 17:04'!
 setUp
 
   	| stream |
 	
 	
-	bytesOfExample1 := #[16r61 16r62 16r63 16r20 16rC3 16rA0 16rC3 16rA8 16rE2 
+     bytesOfExample1 := #[16r61 16r62 16r63 16r20 16rC3 16rA0 16rC3 16rA8 16rE2 
 	                              16r82 16rAC 16r20 16rCE 16rB1 16rCE 16rB2 16rCE 16rB3].
+	
+	"see UnicodeNotes.md"
 	
      "write the bytes of an UFT8 encoded string in binary mode to a file"
      stream := (FileStream  forceNewFileNamed:  self class fileName) binary.
@@ -400,6 +421,22 @@ self assert: stream  next = '&#946;'  "beta".
 self assert: stream  next = '&#947;' "gamma".
 
 
+
+
+
+
+  
+	 ! !
+
+!MultiLingualUnicodeTest methodsFor: 'tests' stamp: 'hjh 2/6/2013 17:02'!
+testUTF8ReadContentsOfEntireFile
+"self new testUTF8ReadContentsOfEntireFile"
+	
+| stream |
+
+stream := MultiByteFileStream readOnlyFileNamed: self class fileName.
+
+self assert: stream contentsOfEntireFile = 'abc ‡Ë§ &#945;&#946;&#947;'
 
 
 
