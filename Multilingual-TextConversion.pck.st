@@ -1,4 +1,4 @@
-'From Cuis 4.1 of 12 December 2012 [latest update: #1576] on 6 February 2013 at 5:04:30 pm'!
+'From Cuis 4.1 of 12 December 2012 [latest update: #1576] on 6 February 2013 at 6:19:09 pm'!
 'Description Simple Unicode layer for Cuis; reading and writing of UFT8 files.'!
 !classDefinition: #MultiByteFileStream category: #'Multilingual-TextConversion'!
 StandardFileStream subclass: #MultiByteFileStream
@@ -444,9 +444,54 @@ self assert: stream contentsOfEntireFile = 'abc ‡Ë§ &#945;&#946;&#947;'
   
 	 ! !
 
+!MultiLingualUnicodeTest methodsFor: 'tests' stamp: 'hjh 2/6/2013 18:14'!
+testUTF8Write
+"self new testUTF8Write"
+	
+| stream  |
+
+	stream := MultiByteFileStream forceNewFileNamed: self class fileName2.
+
+
+	"stream converter: UTF8TextConverter new."
+
+	"should be the default converter"
+
+	self assert: stream converter class == UTF8TextConverter.
+
+
+     stream nextPut: $a.
+     stream  nextPut: $b.
+     stream  nextPut: $c.
+     stream  nextPut: Character space.
+
+     stream nextPut:  $‡.
+     stream nextPut: $Ë.
+     stream nextPut: $§.
+     stream nextPut: Character space.
+
+    stream nextPutAll: '&#945;' .
+    stream nextPutAll: '&#946;' .
+    stream nextPutAll: '&#947;' .
+
+     stream close.
+
+
+
+
+
+
+
+  
+	 ! !
+
 !MultiLingualUnicodeTest class methodsFor: 'as yet unclassified' stamp: 'hjh 2/6/2013 12:50'!
 fileName
 	^'UTF8abc-test.txt'.! !
+
+!MultiLingualUnicodeTest class methodsFor: 'as yet unclassified' stamp: 'hjh 2/6/2013 17:20'!
+fileName2
+	^'UTF8abc-test2.txt'.! !
 
 !TextConverter methodsFor: 'as yet unclassified' stamp: 'hjh 2/6/2013 09:53'!
 installLineEndConvention: lineEndStringOrNil
@@ -484,8 +529,13 @@ nextFromStream: aStream	| char1 value1 char2 value2 unicode char3 value3 char4
 	^self class cuisEquivalentForUnicodeValue:  unicode.
 	! !
 
-!UTF8TextConverter methodsFor: 'conversion' stamp: 'ul 5/17/2011 17:25'!
-nextPut: aCharacter toStream: aStream 		| nBytes mask shift ucs2code |	aStream isBinary ifTrue: [ ^aCharacter storeBinaryOn: aStream ].	ucs2code := aCharacter asUnicode ifNil: [ ^aCharacter ].	ucs2code < 256 ifTrue: [		(latin1Encodings at: ucs2code + 1)			ifNil: [ aStream basicNextPut: aCharacter ]			ifNotNil: [ :encodedString | aStream basicNextPutAll: encodedString ].		^aCharacter ].	nBytes := ucs2code highBit + 3 // 5.	mask := #[128 192 224 240 248 252 254 255] at: nBytes.	shift := nBytes - 1 * -6.	aStream basicNextPut: (Character value: (ucs2code bitShift: shift) + mask).	2 to: nBytes do: [ :i | 		shift := shift + 6.		aStream basicNextPut: (			Character value: ((ucs2code bitShift: shift) bitAnd: 63) + 128) ].	^aCharacter.! !
+!UTF8TextConverter methodsFor: 'conversion' stamp: 'hjh 2/6/2013 18:18'!
+nextPut: aCharacter toStream: aStream 		aStream basicNextPutAll: aCharacter asString iso8859s15ToUtf8 ! !
+
+!UTF8TextConverter methodsFor: 'conversion' stamp: 'hjh 2/6/2013 18:15'!
+nextPutAll: aCollection toStream: aStream
+
+	aStream basicNextPutAll: aCollection iso8859s15ToUtf8! !
 
 !UTF8TextConverter methodsFor: 'fileIn/Out' stamp: 'ul 3/27/2010 16:44'!
 skipSeparatorsAndPeekNextFrom: aStream	"Same as #skipSeparators, but returns the next character after the separators if such exists."	| character |	[ 		((character := aStream basicNext) 			ifNil: [ ^aStream "backwards compatibility, should be nil" ])				isSeparator ] whileTrue.	aStream skip: -1.	^character	! !
