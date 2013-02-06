@@ -1,4 +1,4 @@
-'From Cuis 4.1 of 12 December 2012 [latest update: #1576] on 6 February 2013 at 6:19:09 pm'!
+'From Cuis 4.1 of 12 December 2012 [latest update: #1576] on 6 February 2013 at 6:45:45 pm'!
 'Description Simple Unicode layer for Cuis; reading and writing of UFT8 files.'!
 !classDefinition: #MultiByteFileStream category: #'Multilingual-TextConversion'!
 StandardFileStream subclass: #MultiByteFileStream
@@ -92,9 +92,6 @@ ascii	super ascii.	self detectLineEndConvention.! !
 !MultiByteFileStream methodsFor: 'public' stamp: 'ul 3/22/2010 07:59'!
 back	^converter backFromStream: self! !
 
-!MultiByteFileStream methodsFor: 'crlf private' stamp: 'ul 1/20/2011 01:51'!
-bareNext	self deprecated: 'Don''t use this method anymore.'.	^converter nextFromStream: self.! !
-
 !MultiByteFileStream methodsFor: 'private basic' stamp: 'ul 3/22/2010 07:50'!
 basicBack	self position = 0 ifTrue: [ self errorCantGoBack ].	self skip: -1.	^self basicPeek! !
 
@@ -180,20 +177,8 @@ detectLineEndConvention	"Detect the line end convention used in this stream. Th
 !MultiByteFileStream methodsFor: 'crlf private' stamp: 'ul 1/30/2011 04:35'!
 doConversion	^wantsLineEndConversion and: [ lineEndConvention notNil ]! !
 
-!MultiByteFileStream methodsFor: 'fileIn/Out' stamp: 'yo 8/17/2004 10:03'!
-fileIn	self setConverterForCode.	super fileIn.! !
-
 !MultiByteFileStream methodsFor: 'accessing' stamp: 'yo 8/6/2003 11:56'!
 fileInEncodingName: aString	self converter: (TextConverter newForEncoding: aString).	super fileIn.! !
-
-!MultiByteFileStream methodsFor: 'fileIn/Out' stamp: 'ar 7/29/2005 22:33'!
-fileInObjectAndCodeForProject	"This file may contain:1) a fileIn of code  2) just an object in SmartReferenceStream format 3) both code and an object.	File it in and return the object.  Note that self must be a FileStream or RWBinaryOrTextStream.  Maybe ReadWriteStream incorporate RWBinaryOrTextStream?"	| refStream object |	self text.	self peek asciiValue = 4		ifTrue: [  "pure object file"			self binary.			refStream := SmartRefStream on: self.			object := refStream nextAndClose]		ifFalse: [  "objects mixed with a fileIn"			self fileInProject.  "reads code and objects, then closes the file"			self binary.			object := SmartRefStream scannedObject].	"set by side effect of one of the chunks"	SmartRefStream scannedObject: nil.  "clear scannedObject"	^ object! !
-
-!MultiByteFileStream methodsFor: 'fileIn/Out' stamp: 'ar 7/29/2005 22:33'!
-fileInProject	self setConverterForCodeForProject.	super fileIn.! !
-
-!MultiByteFileStream methodsFor: 'fileIn/Out' stamp: 'tak 1/12/2005 14:48'!
-fileOutClass: extraClass andObject: theObject 	self binary.	UTF8TextConverter writeBOMOn: self.	self text.	^ super fileOutClass: extraClass andObject: theObject! !
 
 !MultiByteFileStream methodsFor: 'remnant' stamp: 'yo 8/28/2002 11:09'!
 filterFor: aFileStream	| rw |	name := aFileStream name.	rw := aFileStream isReadOnly not.	aFileStream close.	self open: name forWrite: rw.	^self.! !
@@ -230,12 +215,6 @@ next: n innerFor: aString	aString size = 0 ifTrue: [^ aString].	"if we just r
 !MultiByteFileStream methodsFor: 'public' stamp: 'ul 1/31/2011 02:08'!
 next: anInteger putAll: aCollection startingAt: startIndex	(self isBinary or: [ aCollection class == ByteArray ]) ifTrue: [		^super next: anInteger putAll: aCollection startingAt: startIndex ].	^converter next: anInteger putAll: aCollection startingAt: startIndex toStream: self! !
 
-!MultiByteFileStream methodsFor: 'fileIn/Out' stamp: 'ul 2/5/2010 23:59'!
-nextChunk	"Answer the contents of the receiver, up to the next terminator character. Doubled terminators indicate an embedded terminator character."	^converter nextChunkFromStream: self! !
-
-!MultiByteFileStream methodsFor: 'fileIn/Out' stamp: 'ul 2/7/2010 04:41'!
-nextChunkText	"Deliver the next chunk as a Text.  Decode the following ]style[ chunk if present.  Position at start of next real chunk."		^converter nextChunkTextFromStream: self! !
-
 !MultiByteFileStream methodsFor: 'public' stamp: 'yo 2/21/2004 03:26'!
 nextDelimited: terminator	| out ch save |	out := WriteStream on: (String new: 1000).	self atEnd ifTrue: [^ ''].	save := converter saveStateOf: self.	self next = terminator ifFalse: [		"absorb initial terminator"		converter restoreStateOf: self with: save.	].	[(ch := self next) == nil] whileFalse: [		(ch = terminator) ifTrue: [			self peek = terminator ifTrue: [				self next.  "skip doubled terminator"			] ifFalse: [				^ out contents  "terminator is not doubled; we're done!!"			].		].		out nextPut: ch.	].	^ out contents.! !
 
@@ -262,12 +241,6 @@ requestDropStream: dropIndex	"Needs to install proper converter"	| result |	
 
 !MultiByteFileStream methodsFor: 'open/close' stamp: 'nice 5/10/2009 00:18'!
 reset	super reset.	converter ifNil: [		self converter: UTF8TextConverter new.	].! !
-
-!MultiByteFileStream methodsFor: 'private' stamp: 'ul 1/20/2011 01:55'!
-setConverterForCode	| currentPosition |	(SourceFiles at: 2)		ifNotNil: [self fullName = (SourceFiles at: 2) fullName ifTrue: [^ self]].	currentPosition := self position.	self position: 0.	self binary.	((self next: 3) = #[ 16rEF 16rBB 16rBF ]) ifTrue: [		self converter: UTF8TextConverter new	] ifFalse: [		self converter: MacRomanTextConverter new.	].	self position: currentPosition.	self text.! !
-
-!MultiByteFileStream methodsFor: 'private' stamp: 'ar 7/29/2005 22:33'!
-setConverterForCodeForProject	self converter: UTF8TextConverter new.! !
 
 !MultiByteFileStream methodsFor: 'public' stamp: 'ul 3/27/2010 00:04'!
 skipSeparators	converter skipSeparatorsFrom: self! !
