@@ -5,10 +5,10 @@ Cuis-Multilingual-TextConversion
 The files in this repository serve for a port of classes from Squeak to allow Cuis Smalltalk 
 to read and write text files in different encodings.
 
-However as of Cuis version 4.1-1590 it is not all that necessary to go for this 
-as there is an update which allows Cuis to read and write UTF8 text files losslessly. For details see below.
+However as of Cuis version 4.1-1590 and later it is not all that necessary to go for this 
+as there is as update 1590 allows Cuis to read and write UTF8 text files losslessly. For details about change set 1590 
+see section below.
 
-As of now Cuis 4.1-1590 and later may read and write UTF8 text files losslessly without needing any additional package.
 
 To read an UTF8 file in Cuis 4.1-1590 execute
 
