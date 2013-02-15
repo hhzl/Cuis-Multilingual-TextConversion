@@ -8,7 +8,7 @@ to read and write text files in different encodings.
 However as of Cuis version 4.1-1590 it is not all that necessary to go for this 
 as there is an update which allows Cuis to read and write UTF8 text files losslessly. For details see below.
 
-As of now Cuis 4.1-1590 plus  read and write UTF8 text filoes without any additional package.
+As of now Cuis 4.1-1590 and later may read and write UTF8 text files losslessly without needing any additional package.
 
 To read an UTF8 file in Cuis 4.1-1590 execute
 
@@ -28,7 +28,7 @@ To write an UTF8 file execute
         " 'true' means 'convert Numerical Character References back to UTF8'   "
         close.
 
-Ref: NCR, seehttp://en.wikipedia.org/wiki/Numeric_character_reference
+Ref: NCR, see http://en.wikipedia.org/wiki/Numeric_character_reference
 
 	
 
@@ -55,6 +55,9 @@ MultiLingualUnicodeTest>>testUTF8ReadContentsOfEntireFile
 The Strings in Cuis are still ByteStrings (8 bit characters) after loading this Add-On. 
 Unicode characters are shown as HTML number entities in case 
 they do not fall in the supported set of characters in Cuis.
+
+Because of the Cuis change set 4.1-1590 the development of this package is put on hold for the moment. 
+It may be later resumed because of the need for an UTF8TextConverter class for compatibiliy reasons.
 
 
 ### Cuis change set 4.1-1590
