@@ -1,16 +1,51 @@
 Cuis-Multilingual-TextConversion
 ----------------------------------------
 
+### Aim
 
-The files in this repository serve for a port of classes from Squeak to allow Cuis Smalltalk 
-to read and write text files in different encodings.
+The files in this repository serve for a port of classes 
+- UTF8TextConverter
+- MultiByteFileStream
 
-However as of Cuis version 4.1-1590 and later it is not all that necessary to go for this 
-as there is as update 1590 allows Cuis to read and write UTF8 text files losslessly. For details about change set 1590 
-see section below.
+from Squeak/Pharo to allow Cuis Smalltalk 
+to read and write text files in UTF8 encodings. As the code converters 
+form a small framework more encodings may be added from Squeak or Pharo as needed.
+
+Note that for version 4.1-1590 and later allows Cuis to read and write UTF8 text files losslessly without 
+using these classes. For details about change set 1590 see section below.
 
 
-To read an UTF8 file in Cuis 4.1-1590 execute
+### Status
+
+alpha; initial load done and made some test cases to work
+
+
+MultiLingualUnicodeTest>>testUTF8ReadContentsOfEntireFile
+
+
+    testUTF8ReadContentsOfEntireFile
+      "self new testUTF8ReadContentsOfEntireFile"
+	
+      | stream |
+
+      stream := MultiByteFileStream readOnlyFileNamed: self class fileName.
+
+      self assert: stream contentsOfEntireFile = 'abc �� &#945;&#946;&#947;'
+
+
+Note that in this README.md file the test string is not proplerly displayed as it is UTF8 whereas in 
+Cuis we have ISO8859-15 with NCRs.
+
+
+Because of the Cuis change set 4.1-1590 the development of this package is put on hold for the moment. 
+It may be later resumed because of the need for an UTF8TextConverter and
+MultiByteFileStream class for compatibiliy reasons.
+
+
+
+### UTF8 reading and writing in Cuis
+
+To read an UTF8 file in Cuis 4.1-1590 without this package beein present execute
 
     String fromUtf8:
        (FileStream fileNamed: 'anUTF8file.txt') contentsOfEntireFile
@@ -32,32 +67,12 @@ Ref: NCR, see http://en.wikipedia.org/wiki/Numeric_character_reference
 
 	
 
-### Status of this package
-
-The aim of the package here is to go for a TextConverter and UTF8TextConverter class as in Squeak.	
-
-Initial load and made some test cases to work
-
-
-MultiLingualUnicodeTest>>testUTF8ReadContentsOfEntireFile
-
-
-    testUTF8ReadContentsOfEntireFile
-    "self new testUTF8ReadContentsOfEntireFile"
-	
-    | stream |
-
-     stream := MultiByteFileStream readOnlyFileNamed: self class fileName.
-
-    self assert: stream contentsOfEntireFile = 'abc �� &#945;&#946;&#947;'
+### Strings in Cuis and Unicode
 
 
 The Strings in Cuis are still ByteStrings (8 bit characters) after loading this Add-On. 
 Unicode characters are shown as HTML number entities in case 
 they do not fall in the supported set of characters in Cuis.
-
-Because of the Cuis change set 4.1-1590 the development of this package is put on hold for the moment. 
-It may be later resumed because of the need for an UTF8TextConverter class for compatibiliy reasons.
 
 
 ### Cuis change set 4.1-1590
@@ -91,4 +106,11 @@ Details see:
 The class UnicodeTest4dot1dash1590 contained in 
     UnicodeTest4dot1dash1590.st
 demonstrates the use of the methods _#asUtf8:_ and _#fromUtf8:_
+
+
+
+### Code archive
+
+This repository contains some code archived from Pharo, Squeak and from Janko Mivšek <janko.mivsek@eranova.si.
+It shows the status in Pharo and Squeak. The other code is a proposal for a two byte Unicode solution.
 
